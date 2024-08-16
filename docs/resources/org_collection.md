@@ -37,6 +37,7 @@ resource "bitwarden_org_collection" "engineering" {
 
 ### Read-Only
 
+- `object` (String) INTERNAL USE
 
 ## Import
 

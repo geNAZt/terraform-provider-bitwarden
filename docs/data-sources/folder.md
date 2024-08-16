@@ -39,3 +39,4 @@ resource "bitwarden_item_login" "administrative_user" {
 ### Read-Only
 
 - `name` (String) Name.
+- `object` (String) INTERNAL USE

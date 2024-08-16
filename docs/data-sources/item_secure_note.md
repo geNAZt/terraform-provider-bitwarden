@@ -52,9 +52,11 @@ resource "kubernetes_secret" "preshared_key" {
 - `folder_id` (String) Identifier of the folder.
 - `name` (String) Name.
 - `notes` (String, Sensitive) Notes.
+- `object` (String) INTERNAL USE
 - `organization_id` (String) Identifier of the organization.
 - `reprompt` (Boolean) Require master password “re-prompt” when displaying secret in the UI.
 - `revision_date` (String) Last time the item was updated.
+- `type` (Number) INTERNAL USE
 
 <a id="nestedatt--attachments"></a>
 ### Nested Schema for `attachments`

@@ -113,6 +113,7 @@ export BW_CLIENTSECRET="my-client-secret"
 
 ### Optional
 
+- `api_endpoint` (String) Bitwarden CLI API endpoint which has already been logged in
 - `client_id` (String) Client ID (env: `BW_CLIENTID`)
 - `client_secret` (String) Client Secret (env: `BW_CLIENTSECRET`). Do not commit this information in Git unless you know what you're doing. Prefer using a Terraform `variable {}` in order to inject this value from the environment.
 - `extra_ca_certs` (String) Extends the well known 'root' CAs (like VeriSign) with the extra certificates in file (env: `NODE_EXTRA_CA_CERTS`).

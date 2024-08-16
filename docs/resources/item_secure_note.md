@@ -65,7 +65,9 @@ EOT
 - `attachments` (List of Object) List of item attachments. (see [below for nested schema](#nestedatt--attachments))
 - `creation_date` (String) Date the item was created.
 - `deleted_date` (String) Date the item was deleted.
+- `object` (String) INTERNAL USE
 - `revision_date` (String) Last time the item was updated.
+- `type` (Number) INTERNAL USE
 
 <a id="nestedblock--field"></a>
 ### Nested Schema for `field`

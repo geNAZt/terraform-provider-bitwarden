@@ -31,6 +31,7 @@ resource "bitwarden_folder" "databases" {
 
 ### Read-Only
 
+- `object` (String) INTERNAL USE
 
 ## Import
 
