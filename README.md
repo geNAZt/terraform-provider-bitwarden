@@ -1,51 +1,76 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider for Bitwarden
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
+![Tests](https://github.com/paymenttools/terraform-provider-bitwarden/actions/workflows/tests.yml/badge.svg?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/maxlaverse/terraform-provider-bitwarden/badge.svg?branch=main)](https://coveralls.io/github/maxlaverse/terraform-provider-bitwarden?branch=main)
+![Go Version](https://img.shields.io/github/go-mod/go-version/maxlaverse/terraform-provider-bitwarden)
+![Releases](https://img.shields.io/github/v/release/maxlaverse/terraform-provider-bitwarden?include_prereleases)
+![Downloads](https://img.shields.io/badge/dynamic/json?color=7b42bc&label=Downloads&labelColor=black&logo=terraform&query=data.attributes.total&url=https%3A%2F%2Fregistry.terraform.io%2Fv2%2Fproviders%2F2657%2Fdownloads%2Fsummary&style=flat-square)
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
+The Terraform Bitwarden provider is a plugin for Terraform that allows to manage different kind of Bitwarden resources.
+This project is not associated with the Bitwarden project nor 8bit Solutions LLC.
 
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
+**[Explore the docs »][Terraform Registry docs]**
 
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
+---
 
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
+## Table of Contents
+- [Supported Versions](#supported-versions)
+- [Usage](#usage)
+- [Developing the Provider](#developing-the-provider)
+- [License](#license)
 
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
+## Supported Versions
+The plugin has been tested and built with the following components:
+- [Terraform] v1.6.1
+- [Bitwarden CLI] v2023.2.0
+- [Go] 1.22.0 (for development)
+- [Docker] 23.0.5 (for development)
 
-## Requirements
+The provider likely works with older versions but those haven't been tested.
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21
+## Usage
 
-## Building The Provider
+The complete documentation for this provider can be found on the [Terraform Registry docs].
 
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+```tf
+terraform {
+  required_providers {
+    bitwarden = {
+      source  = "maxlaverse/bitwarden"
+      version = ">= 0.8.0"
+    }
+  }
+}
 
-```shell
-go install
+# Configure the Bitwarden Provider
+provider "bitwarden" {
+  email = "terraform@example.com"
+}
+
+# Create a Bitwarden Login item
+resource "bitwarden_item_login" "example" {
+  name     = "Example"
+  username = "service-account"
+  password = "<sensitive>"
+}
+
+# or use an existing Bitwarden resource
+data "bitwarden_item_login" "example" {
+  search = "Example"
+}
 ```
 
-## Adding Dependencies
+See the [examples](./examples/) directory for more examples.
 
-This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
+## Security Considerations
 
-To add a new dependency `github.com/author/dependency` to your Terraform provider:
+The Terraform Bitwarden provider entirely relies on the [Bitwarden CLI] to interact with Vaults.
+When you ask Terraform to *plan* or *apply* changes, the provider downloads the encrypted Vault locally as if you would use the Bitwarden CLI directly.
+Currently, the Terraform SDK doesn't offer a way to remove the encrypted Vault once changes have been applied.
+The issue [hashicorp/terraform-plugin-sdk#63] tracks discussions for adding such a feature.
 
-```shell
-go get github.com/author/dependency
-go mod tidy
-```
-
-Then commit the changes to `go.mod` and `go.sum`.
-
-## Using the provider
-
-Fill this in for each provider
+If you want find out more about this file, you can read [Terraform's documentation on Data Storage].
+Please note that this file is stored at `<your-project>/.bitwarden/` by default, in order to not interfer with your local Vaults.
 
 ## Developing the Provider
 
@@ -55,10 +80,35 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To generate or update documentation, run `go generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```shell
-make testacc
+In order to run the full suite of Acceptance tests, start a Vaultwarden server:
+```sh
+$ docker run -ti \
+  -e I_REALLY_WANT_VOLATILE_STORAGE=true \
+  -e DISABLE_ICON_DOWNLOAD=false \
+  -e ADMIN_TOKEN=test1234 \
+  -e LOGIN_RATELIMIT_SECONDS=1 \
+  -e LOGIN_RATELIMIT_MAX_BURST=1000000 \
+  -e ADMIN_RATELIMIT_SECONDS=1 \
+  -e ADMIN_RATELIMIT_MAX_BURST=1000000 \
+  --mount type=tmpfs,destination=/data \
+  -p 8080:80 vaultwarden/server
 ```
+
+Then run `make testacc`.
+
+```sh
+$ make testacc
+```
+
+
+## License
+
+Distributed under the Mozilla License. See [LICENSE](./LICENSE) for more information.
+
+[Terraform]: https://www.terraform.io/downloads.html
+[Go]: https://golang.org/doc/install
+[Bitwarden CLI]: https://bitwarden.com/help/article/cli/#download-and-install
+[Docker]: https://www.docker.com/products/docker-desktop
+[Terraform Registry docs]: https://registry.terraform.io/providers/maxlaverse/bitwarden/latest/docs
+[hashicorp/terraform-plugin-sdk#63]: https://github.com/hashicorp/terraform-plugin-sdk/issues/63
+[Terraform's documentation on Data Storage]: https://bitwarden.com/help/data-storage/#on-your-local-machine

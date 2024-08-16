@@ -1,0 +1,89 @@
+---
+layout: ""
+page_title: "Bitwarden Provider"
+description: |-
+  Use the Bitwarden provider to read, create, or update logins, secure notes and folders in your Bitwarden Vaults.
+---
+
+# Bitwarden Provider
+
+Use the Bitwarden provider to interact with Bitwarden logins, secure notes, folders and org-collections.
+You must configure the provider with proper credentials before you can use it, and have the [Bitwarden CLI] installed.
+
+## Example Usage
+
+{{tffile "examples/quick/provider.tf"}}
+
+## Authentication
+The Bitwarden provider can use different combinations of credentials to authenticate:
+* Email and Password (requires `email` and `master_password`)
+* API key (requires `email`, `master_password`, `client_id` and `client_secret`)
+* user-provided Session Key (requires `session_key`)
+
+### Generating a Client ID and Secret
+The recommended way to interact with your Vault using the Bitwarden Provider Terraform plugin is to generate an API key.
+This allows you to easily revoke access to your Vault without having to change your master password.
+
+In order to generate a pair of Client ID and Secret, you need to:
+1. Connect to your Vault on https://vault.bitwarden.com, or your self-hosted instance
+2. Click on _Settings_ and then _My Account_
+3. Scroll down to the _API Key_ section
+4. Click on _View API Key_ (or maybe another label if it's the first time)
+5. Save the API credentials somewhere safe
+
+### Generating a Session Key
+
+If you don't want to use an API key, you can use a Session Key instead.
+When doing so, it's your responsibility to:
+* ensure the validity of the Session Key
+* keep the Session Key safe
+* revoke it when you don't need it anymore
+
+You can generate a Session Key by running the following command in your Terraform Workspace:
+```console
+BITWARDENCLI_APPDATA_DIR=.bitwarden bw login
+
+# or if you use a custom vault path
+BITWARDENCLI_APPDATA_DIR=<vault_path> bw login
+```
+
+## Configuration
+Configuration for the Bitwarden Provider can be derived from two sources:
+* Parameters in the provider configuration
+* Environment variables
+
+### Parameters
+Credentials can be provided by adding a combination of `email`, `master_password`, `client_id`, `client_secret` or `session_key` to the bitwarden provider block.
+```terraform
+provider "bitwarden" {
+  email           = "terraform@example.com"
+  master_password = "my-master-password"
+  client_id       = "my-client-id"
+  client_secret   = "my-client-secret"
+}
+```
+
+### Environment variables
+Credentials can be provided by using a combination of `BW_EMAIL`, `BW_PASSWORD`, `BW_CLIENTID`, `BW_CLIENTSECRET` or `BW_SESSION` environment variables. 
+
+For example:
+```bitwarden
+provider "bitwarden" {}
+```
+
+```console
+export BW_EMAIL="terraform@example.com"
+export BW_PASSWORD="my-master-password"
+export BW_CLIENTID="my-client-id"
+export BW_CLIENTSECRET="my-client-secret"
+```
+
+{{ .SchemaMarkdown | trimspace }}
+
+[Bitwarden]: https://bitwarden.com/help/article/managing-items/
+[Bitwarden CLI]: https://bitwarden.com/help/article/cli/#download-and-install
+
+## Known issues
+
+There is an open issue with the Bitwarden CLI that prevents it from creating attachments in recent version (see [bitwarden/clients#5618](https://github.com/bitwarden/clients/issues/5618)).
+The only workaround is to use an older version of the Bitwarden CLI, e.g. 2023.02.

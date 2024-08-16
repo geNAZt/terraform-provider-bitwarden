@@ -1,0 +1,1 @@
+$ terraform import bitwarden_item_secure_note.example <secure_note_item_id>

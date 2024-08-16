@@ -1,0 +1,1 @@
+$ terraform import bitwarden_folder.example <folder_id>

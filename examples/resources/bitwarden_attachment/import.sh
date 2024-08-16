@@ -1,0 +1,1 @@
+$ terraform import bitwarden_attachment.example <item_id>/<attachment_id>
