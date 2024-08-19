@@ -192,7 +192,7 @@ func (c *client) ListObjects(objType string, options ...ListObjectsOption) ([]Ob
 	}
 
 	for _, applyOption := range options {
-		applyOption(&args)
+		applyOption(&args, nil)
 	}
 
 	out, err := c.cmdWithSession(args...).Run()

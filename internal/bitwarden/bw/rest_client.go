@@ -167,14 +167,23 @@ func (r *restClient) GetSessionKey() string {
 }
 
 func (r *restClient) ListObjects(objType string, options ...ListObjectsOption) ([]Object, error) {
-	tflog.Debug(r.ctx, "List objects")
+	tflog.Debug(r.ctx, "List objects", map[string]any{"type": objType})
 
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	u = u.JoinPath("list", "object", "items")
+	u = u.JoinPath("list", "object", objType)
+
+	// Add filters
+	q := u.Query()
+	for _, opt := range options {
+		opt(nil, &q)
+	}
+
+	u.RawQuery = q.Encode()
+
 	resp, err := r.client.Get(u.String())
 	if err != nil {
 		return nil, err
