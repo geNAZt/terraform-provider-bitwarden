@@ -120,9 +120,9 @@ func New(version string) func() *schema.Provider {
 }
 
 func providerConfigure(version string, _ *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
-		bwClient, err := newBitwardenClient(d, version)
+		bwClient, err := newBitwardenClient(ctx, d, version)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
@@ -244,9 +244,9 @@ func logoutIfIdentityChanged(d *schema.ResourceData, bwClient bw.Client, status 
 	return nil
 }
 
-func newBitwardenClient(d *schema.ResourceData, version string) (bw.Client, error) {
+func newBitwardenClient(ctx context.Context, d *schema.ResourceData, version string) (bw.Client, error) {
 	if endpoint, ok := d.GetOk(attributeAPIEndpoint); ok {
-		return bw.NewRestClient(endpoint.(string)), nil
+		return bw.NewRestClient(ctx, endpoint.(string)), nil
 	}
 
 	opts := []bw.Options{}

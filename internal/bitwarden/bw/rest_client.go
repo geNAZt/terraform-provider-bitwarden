@@ -2,6 +2,7 @@ package bw
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,14 +11,20 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type restClient struct {
+	ctx context.Context
+
 	client   *http.Client
 	endpoint string
 }
 
 func (r *restClient) CreateAttachment(itemId, filePath string) (*Object, error) {
+	tflog.Debug(r.ctx, "Creating attachement", map[string]any{"itemId": itemId})
+
 	// Prepare file for upload
 	var (
 		buf = new(bytes.Buffer)
@@ -59,10 +66,12 @@ func (r *restClient) CreateAttachment(itemId, filePath string) (*Object, error) 
 		return nil, err
 	}
 
-	return readResponse[Object](resp)
+	return readResponse[Object](r.ctx, resp)
 }
 
 func (r *restClient) CreateObject(object Object) (*Object, error) {
+	tflog.Debug(r.ctx, "Creating object", map[string]any{"itemId": object.ID})
+
 	requestData, err := json.Marshal(object)
 	if err != nil {
 		return nil, err
@@ -79,7 +88,7 @@ func (r *restClient) CreateObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](resp)
+	return readResponse[Object](r.ctx, resp)
 }
 
 func (r *restClient) EditObject(object Object) (*Object, error) {
@@ -105,7 +114,7 @@ func (r *restClient) EditObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](resp)
+	return readResponse[Object](r.ctx, resp)
 }
 
 func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) {
@@ -144,7 +153,7 @@ func (r *restClient) GetObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](resp)
+	return readResponse[Object](r.ctx, resp)
 }
 
 func (r *restClient) GetSessionKey() string {
@@ -163,7 +172,7 @@ func (r *restClient) ListObjects(objType string, options ...ListObjectsOption) (
 		return nil, err
 	}
 
-	return readArrayResponse[Object](resp)
+	return readArrayResponse[Object](r.ctx, resp)
 }
 
 func (r *restClient) LoginWithAPIKey(password, clientId, clientSecret string) error {
@@ -243,7 +252,7 @@ func (r *restClient) Status() (*Status, error) {
 		return nil, err
 	}
 
-	re, err := readResponse[RESTStatus](resp)
+	re, err := readResponse[RESTStatus](r.ctx, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +278,7 @@ func (r *restClient) Sync() error {
 		return err
 	}
 
-	_, err = readResponse[RESTStatus](resp)
+	_, err = readResponse[RESTStatus](r.ctx, resp)
 	if err != nil {
 		return err
 	}
@@ -302,7 +311,7 @@ func (r *restClient) Unlock(password string) error {
 		return err
 	}
 
-	_, err = readResponse[RESTMessageResult](resp)
+	_, err = readResponse[RESTMessageResult](r.ctx, resp)
 	if err != nil {
 		return err
 	}
@@ -310,12 +319,14 @@ func (r *restClient) Unlock(password string) error {
 	return nil
 }
 
-func readResponse[T any](resp *http.Response) (*T, error) {
+func readResponse[T any](ctx context.Context, resp *http.Response) (*T, error) {
 	var respObj RESTWrapper[T]
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
+	tflog.Debug(ctx, "Response from BW", map[string]any{"raw": string(respData)})
 
 	err = json.Unmarshal(respData, &respObj)
 	if err != nil {
@@ -329,12 +340,14 @@ func readResponse[T any](resp *http.Response) (*T, error) {
 	return nil, fmt.Errorf("response was not successful")
 }
 
-func readArrayResponse[T any](resp *http.Response) ([]T, error) {
+func readArrayResponse[T any](ctx context.Context, resp *http.Response) ([]T, error) {
 	var respObj RESTWrapper[[]T]
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
+	tflog.Debug(ctx, "Response from BW", map[string]any{"raw": string(respData)})
 
 	err = json.Unmarshal(respData, &respObj)
 	if err != nil {
@@ -367,8 +380,10 @@ func readBooleanResponse(resp *http.Response) error {
 	return nil
 }
 
-func NewRestClient(endpoint string) Client {
+func NewRestClient(ctx context.Context, endpoint string) Client {
 	return &restClient{
+		ctx: ctx,
+
 		client:   http.DefaultClient,
 		endpoint: endpoint,
 	}
