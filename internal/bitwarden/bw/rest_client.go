@@ -92,6 +92,8 @@ func (r *restClient) CreateObject(object Object) (*Object, error) {
 }
 
 func (r *restClient) EditObject(object Object) (*Object, error) {
+	tflog.Debug(r.ctx, "Editing object", map[string]any{"itemId": object.ID})
+
 	requestData, err := json.Marshal(object)
 	if err != nil {
 		return nil, err
@@ -118,6 +120,8 @@ func (r *restClient) EditObject(object Object) (*Object, error) {
 }
 
 func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) {
+	tflog.Debug(r.ctx, "Getting attachement", map[string]any{"itemId": itemId, "attachement": attachmentId})
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return nil, err
@@ -142,6 +146,8 @@ func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) 
 }
 
 func (r *restClient) GetObject(object Object) (*Object, error) {
+	tflog.Debug(r.ctx, "Getting object", map[string]any{"itemId": object.ID})
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return nil, err
@@ -161,6 +167,8 @@ func (r *restClient) GetSessionKey() string {
 }
 
 func (r *restClient) ListObjects(objType string, options ...ListObjectsOption) ([]Object, error) {
+	tflog.Debug(r.ctx, "List objects")
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return nil, err
@@ -188,6 +196,8 @@ func (r *restClient) Logout() error {
 }
 
 func (r *restClient) DeleteAttachment(itemId, attachmentId string) error {
+	tflog.Debug(r.ctx, "Delete attachement", map[string]any{"itemId": itemId, "attachementId": attachmentId})
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return err
@@ -212,6 +222,8 @@ func (r *restClient) DeleteAttachment(itemId, attachmentId string) error {
 }
 
 func (r *restClient) DeleteObject(object Object) error {
+	tflog.Debug(r.ctx, "Deleting object", map[string]any{"itemId": object.ID})
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return err
@@ -241,6 +253,8 @@ func (r *restClient) SetSessionKey(s string) {
 }
 
 func (r *restClient) Status() (*Status, error) {
+	tflog.Debug(r.ctx, "Getting status")
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return nil, err
@@ -261,6 +275,8 @@ func (r *restClient) Status() (*Status, error) {
 }
 
 func (r *restClient) Sync() error {
+	tflog.Debug(r.ctx, "Sync vault")
+
 	u, err := url.Parse(r.endpoint)
 	if err != nil {
 		return err
@@ -287,6 +303,8 @@ func (r *restClient) Sync() error {
 }
 
 func (r *restClient) Unlock(password string) error {
+	tflog.Debug(r.ctx, "Unlock vault")
+
 	rp := &RESTUnlock{Password: password}
 
 	requestData, err := json.Marshal(rp)
