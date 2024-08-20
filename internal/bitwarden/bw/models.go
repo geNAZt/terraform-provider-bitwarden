@@ -97,13 +97,15 @@ type RESTSuccess struct {
 }
 
 type RESTWrapper[T any] struct {
-	Success bool `json:"success"`
-	Data    T    `json:"data"`
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    T      `json:"data"`
 }
 
 type RESTArrayWrapper[T any] struct {
-	Success bool `json:"success"`
-	Data    []T  `json:"data"`
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    []T    `json:"data"`
 }
 
 type RESTStatus struct {

@@ -66,7 +66,12 @@ func (r *restClient) CreateAttachment(itemId, filePath string) (*Object, error) 
 		return nil, err
 	}
 
-	return readResponse[Object](r.ctx, resp)
+	o, sErr := readResponse[Object](r.ctx, resp)
+	if len(sErr) > 0 {
+		return nil, fmt.Errorf(sErr)
+	}
+
+	return o, nil
 }
 
 func (r *restClient) CreateObject(object Object) (*Object, error) {
@@ -88,7 +93,12 @@ func (r *restClient) CreateObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](r.ctx, resp)
+	o, sErr := readResponse[Object](r.ctx, resp)
+	if len(sErr) > 0 {
+		return nil, fmt.Errorf(sErr)
+	}
+
+	return o, nil
 }
 
 func (r *restClient) EditObject(object Object) (*Object, error) {
@@ -116,7 +126,12 @@ func (r *restClient) EditObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](r.ctx, resp)
+	o, sErr := readResponse[Object](r.ctx, resp)
+	if len(sErr) > 0 {
+		return nil, fmt.Errorf(sErr)
+	}
+
+	return o, nil
 }
 
 func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) {
@@ -135,6 +150,10 @@ func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) 
 	resp, err := r.client.Get(u.String())
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode == 404 {
+		return nil, ErrAttachmentNotFound
 	}
 
 	all, err := io.ReadAll(resp.Body)
@@ -159,7 +178,16 @@ func (r *restClient) GetObject(object Object) (*Object, error) {
 		return nil, err
 	}
 
-	return readResponse[Object](r.ctx, resp)
+	o, sErr := readResponse[Object](r.ctx, resp)
+	if len(sErr) > 0 {
+		if sErr == "Not found." {
+			return nil, ErrObjectNotFound
+		}
+
+		return nil, fmt.Errorf(sErr)
+	}
+
+	return o, nil
 }
 
 func (r *restClient) GetSessionKey() string {
@@ -189,7 +217,12 @@ func (r *restClient) ListObjects(objType string, options ...ListObjectsOption) (
 		return nil, err
 	}
 
-	return readArrayResponse[Object](r.ctx, resp)
+	l, sErr := readArrayResponse[Object](r.ctx, resp)
+	if len(sErr) > 0 {
+		return nil, fmt.Errorf(sErr)
+	}
+
+	return l, nil
 }
 
 func (r *restClient) LoginWithAPIKey(password, clientId, clientSecret string) error {
@@ -275,9 +308,9 @@ func (r *restClient) Status() (*Status, error) {
 		return nil, err
 	}
 
-	re, err := readResponse[RESTStatus](r.ctx, resp)
-	if err != nil {
-		return nil, err
+	re, sErr := readResponse[RESTStatus](r.ctx, resp)
+	if len(sErr) > 0 {
+		return nil, fmt.Errorf(sErr)
 	}
 
 	return &re.Template, nil
@@ -303,9 +336,9 @@ func (r *restClient) Sync() error {
 		return err
 	}
 
-	_, err = readResponse[RESTStatus](r.ctx, resp)
-	if err != nil {
-		return err
+	_, sErr := readResponse[RESTStatus](r.ctx, resp)
+	if len(sErr) > 0 {
+		return fmt.Errorf(sErr)
 	}
 
 	return nil
@@ -338,54 +371,54 @@ func (r *restClient) Unlock(password string) error {
 		return err
 	}
 
-	_, err = readResponse[RESTMessageResult](r.ctx, resp)
-	if err != nil {
-		return err
+	_, sErr := readResponse[RESTMessageResult](r.ctx, resp)
+	if len(sErr) > 0 {
+		return fmt.Errorf(sErr)
 	}
 
 	return nil
 }
 
-func readResponse[T any](ctx context.Context, resp *http.Response) (*T, error) {
+func readResponse[T any](ctx context.Context, resp *http.Response) (*T, string) {
 	var respObj RESTWrapper[T]
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, err.Error()
 	}
 
 	tflog.Debug(ctx, "Response from BW", map[string]any{"raw": string(respData)})
 
 	err = json.Unmarshal(respData, &respObj)
 	if err != nil {
-		return nil, err
+		return nil, err.Error()
 	}
 
 	if respObj.Success {
-		return &respObj.Data, nil
+		return &respObj.Data, ""
 	}
 
-	return nil, fmt.Errorf("response was not successful")
+	return nil, respObj.Message
 }
 
-func readArrayResponse[T any](ctx context.Context, resp *http.Response) ([]T, error) {
+func readArrayResponse[T any](ctx context.Context, resp *http.Response) ([]T, string) {
 	var respObj RESTWrapper[[]T]
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, err.Error()
 	}
 
 	tflog.Debug(ctx, "Response from BW", map[string]any{"raw": string(respData)})
 
 	err = json.Unmarshal(respData, &respObj)
 	if err != nil {
-		return nil, err
+		return nil, err.Error()
 	}
 
 	if respObj.Success {
-		return respObj.Data, nil
+		return respObj.Data, ""
 	}
 
-	return nil, fmt.Errorf("response was not successful")
+	return nil, respObj.Message
 }
 
 func readBooleanResponse(resp *http.Response) error {
