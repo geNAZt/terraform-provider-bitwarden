@@ -15,6 +15,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+type LoggingRoundTripper struct {
+	ctx context.Context
+}
+
+func (t LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	tflog.Debug(t.ctx, "Request", map[string]any{"method": req.Method, "url": req.URL.String()})
+
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+
+	tflog.Debug(t.ctx, "Response", map[string]any{"status": resp.Status})
+	return resp, err
+}
+
 type restClient struct {
 	ctx context.Context
 
@@ -441,10 +457,12 @@ func readBooleanResponse(resp *http.Response) error {
 }
 
 func NewRestClient(ctx context.Context, endpoint string) Client {
+	rt := LoggingRoundTripper{ctx: ctx}
+
 	return &restClient{
 		ctx: ctx,
 
-		client:   http.DefaultClient,
+		client:   &http.Client{Transport: rt},
 		endpoint: endpoint,
 	}
 }
