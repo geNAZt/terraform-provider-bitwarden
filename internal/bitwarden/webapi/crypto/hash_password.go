@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
 	"golang.org/x/crypto/pbkdf2"
 )
 

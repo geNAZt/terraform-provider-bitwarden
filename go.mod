@@ -1,4 +1,4 @@
-module github.com/paymenttools/terraform-provider-bitwarden
+module github.com/geNAZt/terraform-provider-bitwarden
 
 go 1.22
 

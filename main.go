@@ -5,8 +5,8 @@ import (
 	"flag"
 	"log"
 
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/provider"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/provider"
 )
 
 //go:generate terraform fmt -recursive ./examples/
@@ -20,7 +20,7 @@ var (
 	// goreleaser can also pass the specific commit if you want
 	commit string = ""
 
-	providerAddr string = "registry.terraform.io/paymenttools/terraform-provider-bitwarden"
+	providerAddr string = "registry.terraform.io/geNAZt/terraform-provider-bitwarden"
 )
 
 func main() {

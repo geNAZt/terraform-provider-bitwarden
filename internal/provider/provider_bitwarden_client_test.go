@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	test_command "github.com/geNAZt/terraform-provider-bitwarden/internal/command/test"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	test_command "github.com/paymenttools/terraform-provider-bitwarden/internal/command/test"
 	"github.com/stretchr/testify/assert"
 )
 

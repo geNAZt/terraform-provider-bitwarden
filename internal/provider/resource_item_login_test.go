@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/bw"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/bw"
 	"github.com/stretchr/testify/assert"
 )
 

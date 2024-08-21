@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/command"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/command"
 )
 
 func New(dummyOutput map[string]string, callback func(string, *string)) command.NewFn {

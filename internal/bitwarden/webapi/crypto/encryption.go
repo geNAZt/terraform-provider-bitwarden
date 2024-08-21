@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/encryptedstring"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/encryptedstring"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
 )
 
 func Encrypt(plainValue []byte, key symmetrickey.Key) (string, error) {

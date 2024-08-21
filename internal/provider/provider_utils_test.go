@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/bw"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/webapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/bw"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/webapi"
 )
 
 const (

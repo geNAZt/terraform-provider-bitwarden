@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/bw"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/bw"
 )
 
 func createResource(attrObject bw.ObjectType, attrType bw.ItemType) schema.CreateContextFunc {

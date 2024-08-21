@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/command"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/command"
 )
 
 var (

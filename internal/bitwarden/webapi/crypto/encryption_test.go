@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/webapi/crypto/symmetrickey"
 	"github.com/stretchr/testify/assert"
 )
 

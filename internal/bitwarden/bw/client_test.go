@@ -3,7 +3,7 @@ package bw
 import (
 	"testing"
 
-	test_command "github.com/paymenttools/terraform-provider-bitwarden/internal/command/test"
+	test_command "github.com/geNAZt/terraform-provider-bitwarden/internal/command/test"
 	"github.com/stretchr/testify/assert"
 )
 

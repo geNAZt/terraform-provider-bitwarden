@@ -1,8 +1,8 @@
 package provider
 
 import (
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/bw"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/bw"
 )
 
 func dataSourceOrganization() *schema.Resource {

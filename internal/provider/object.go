@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/bitwarden/bw"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/bitwarden/bw"
 )
 
 func objectCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

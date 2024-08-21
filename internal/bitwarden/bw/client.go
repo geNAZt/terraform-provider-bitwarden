@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/paymenttools/terraform-provider-bitwarden/internal/command"
+	"github.com/geNAZt/terraform-provider-bitwarden/internal/command"
 )
 
 type Client interface {
