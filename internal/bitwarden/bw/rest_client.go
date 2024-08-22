@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -32,178 +33,203 @@ func (t LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 }
 
 type restClient struct {
-	ctx context.Context
+	ctx          context.Context
+	retryHandler *retryHandler
 
 	client   *http.Client
 	endpoint string
 }
 
+func retry[T any](r *restClient, fn func() (T, error)) (T, error) {
+	attempts := 0
+	for {
+		attempts = attempts + 1
+		out, err := fn()
+		if err == nil || !r.retryHandler.IsRetryable(err, attempts) {
+			return out, err
+		}
+
+		r.retryHandler.Backoff(attempts)
+		log.Printf("[ERROR] Retrying command after error: %v\n", err)
+	}
+}
+
 func (r *restClient) CreateAttachment(itemId, filePath string) (*Object, error) {
-	tflog.Debug(r.ctx, "Creating attachement", map[string]any{"itemId": itemId})
+	tflog.Debug(r.ctx, "Creating attachment", map[string]any{"itemId": itemId})
 
-	// Prepare file for upload
-	var (
-		buf = new(bytes.Buffer)
-		w   = multipart.NewWriter(buf)
-	)
+	return retry(r, func() (*Object, error) {
+		// Prepare file for upload
+		var (
+			buf = new(bytes.Buffer)
+			w   = multipart.NewWriter(buf)
+		)
 
-	part, err := w.CreateFormFile("file", filepath.Base(filePath))
-	if err != nil {
-		return nil, err
-	}
+		part, err := w.CreateFormFile("file", filepath.Base(filePath))
+		if err != nil {
+			return nil, err
+		}
 
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, err
+		}
 
-	_, err = part.Write(data)
-	if err != nil {
-		return nil, err
-	}
+		_, err = part.Write(data)
+		if err != nil {
+			return nil, err
+		}
 
-	err = w.Close()
-	if err != nil {
-		return nil, err
-	}
+		err = w.Close()
+		if err != nil {
+			return nil, err
+		}
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("attachment")
-	q := u.Query()
-	q.Set("itemid", itemId)
-	u.RawQuery = q.Encode()
+		u = u.JoinPath("attachment")
+		q := u.Query()
+		q.Set("itemid", itemId)
+		u.RawQuery = q.Encode()
 
-	resp, err := r.client.Post(u.String(), w.FormDataContentType(), buf)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := r.client.Post(u.String(), w.FormDataContentType(), buf)
+		if err != nil {
+			return nil, err
+		}
 
-	o, sErr := readResponse[Object](r.ctx, resp)
-	if len(sErr) > 0 {
-		return nil, fmt.Errorf(sErr)
-	}
+		o, sErr := readResponse[Object](r.ctx, resp)
+		if len(sErr) > 0 {
+			return nil, fmt.Errorf(sErr)
+		}
 
-	return o, nil
+		return o, nil
+	})
 }
 
 func (r *restClient) CreateObject(object Object) (*Object, error) {
 	tflog.Debug(r.ctx, "Creating object", map[string]any{"itemId": object.ID})
 
-	requestData, err := json.Marshal(object)
-	if err != nil {
-		return nil, err
-	}
+	return retry(r, func() (*Object, error) {
+		requestData, err := json.Marshal(object)
+		if err != nil {
+			return nil, err
+		}
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("object", "item")
-	resp, err := r.client.Post(u.String(), "application/json", bytes.NewBuffer(requestData))
-	if err != nil {
-		return nil, err
-	}
+		u = u.JoinPath("object", "item")
+		resp, err := r.client.Post(u.String(), "application/json", bytes.NewBuffer(requestData))
+		if err != nil {
+			return nil, err
+		}
 
-	o, sErr := readResponse[Object](r.ctx, resp)
-	if len(sErr) > 0 {
-		return nil, fmt.Errorf(sErr)
-	}
+		o, sErr := readResponse[Object](r.ctx, resp)
+		if len(sErr) > 0 {
+			return nil, fmt.Errorf(sErr)
+		}
 
-	return o, nil
+		return o, nil
+	})
 }
 
 func (r *restClient) EditObject(object Object) (*Object, error) {
 	tflog.Debug(r.ctx, "Editing object", map[string]any{"itemId": object.ID})
 
-	requestData, err := json.Marshal(object)
-	if err != nil {
-		return nil, err
-	}
+	return retry(r, func() (*Object, error) {
+		requestData, err := json.Marshal(object)
+		if err != nil {
+			return nil, err
+		}
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("object", "item", object.ID)
-	request, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(requestData))
-	if err != nil {
-		return nil, err
-	}
+		u = u.JoinPath("object", "item", object.ID)
+		request, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(requestData))
+		if err != nil {
+			return nil, err
+		}
 
-	request.Header.Set("Content-Type", "application/json")
-	resp, err := r.client.Do(request)
-	if err != nil {
-		return nil, err
-	}
+		request.Header.Set("Content-Type", "application/json")
+		resp, err := r.client.Do(request)
+		if err != nil {
+			return nil, err
+		}
 
-	o, sErr := readResponse[Object](r.ctx, resp)
-	if len(sErr) > 0 {
-		return nil, fmt.Errorf(sErr)
-	}
+		o, sErr := readResponse[Object](r.ctx, resp)
+		if len(sErr) > 0 {
+			return nil, fmt.Errorf(sErr)
+		}
 
-	return o, nil
+		return o, nil
+	})
 }
 
 func (r *restClient) GetAttachment(itemId, attachmentId string) ([]byte, error) {
 	tflog.Debug(r.ctx, "Getting attachement", map[string]any{"itemId": itemId, "attachement": attachmentId})
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+	return retry(r, func() ([]byte, error) {
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("object", "attachment", attachmentId)
-	q := u.Query()
-	q.Set("itemid", itemId)
-	u.RawQuery = q.Encode()
+		u = u.JoinPath("object", "attachment", attachmentId)
+		q := u.Query()
+		q.Set("itemid", itemId)
+		u.RawQuery = q.Encode()
 
-	resp, err := r.client.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
+		resp, err := r.client.Get(u.String())
+		if err != nil {
+			return nil, err
+		}
 
-	if resp.StatusCode == 404 {
-		return nil, ErrAttachmentNotFound
-	}
+		if resp.StatusCode == 404 {
+			return nil, ErrAttachmentNotFound
+		}
 
-	all, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+		all, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 
-	return all, nil
+		return all, nil
+	})
 }
 
 func (r *restClient) GetObject(object Object) (*Object, error) {
 	tflog.Debug(r.ctx, "Getting object", map[string]any{"itemId": object.ID})
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	u = u.JoinPath("object", "item", object.ID)
-	resp, err := r.client.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
-
-	o, sErr := readResponse[Object](r.ctx, resp)
-	if len(sErr) > 0 {
-		if sErr == "Not found." {
-			return nil, ErrObjectNotFound
+	return retry(r, func() (*Object, error) {
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
 		}
 
-		return nil, fmt.Errorf(sErr)
-	}
+		u = u.JoinPath("object", "item", object.ID)
+		resp, err := r.client.Get(u.String())
+		if err != nil {
+			return nil, err
+		}
 
-	return o, nil
+		o, sErr := readResponse[Object](r.ctx, resp)
+		if len(sErr) > 0 {
+			if sErr == "Not found." {
+				return nil, ErrObjectNotFound
+			}
+
+			return nil, fmt.Errorf(sErr)
+		}
+
+		return o, nil
+	})
 }
 
 func (r *restClient) GetSessionKey() string {
@@ -213,32 +239,34 @@ func (r *restClient) GetSessionKey() string {
 func (r *restClient) ListObjects(objType string, options ...ListObjectsOption) ([]Object, error) {
 	tflog.Debug(r.ctx, "List objects", map[string]any{"type": objType})
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+	return retry(r, func() ([]Object, error) {
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("list", "object", objType)
+		u = u.JoinPath("list", "object", objType)
 
-	// Add filters
-	q := u.Query()
-	for _, opt := range options {
-		opt(nil, &q)
-	}
+		// Add filters
+		q := u.Query()
+		for _, opt := range options {
+			opt(nil, &q)
+		}
 
-	u.RawQuery = q.Encode()
+		u.RawQuery = q.Encode()
 
-	resp, err := r.client.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
+		resp, err := r.client.Get(u.String())
+		if err != nil {
+			return nil, err
+		}
 
-	l, sErr := readArrayResponse[Object](r.ctx, resp)
-	if len(sErr) > 0 {
-		return nil, fmt.Errorf(sErr)
-	}
+		l, sErr := readArrayResponse[Object](r.ctx, resp)
+		if len(sErr) > 0 {
+			return nil, fmt.Errorf(sErr)
+		}
 
-	return l, nil
+		return l, nil
+	})
 }
 
 func (r *restClient) LoginWithAPIKey(password, clientId, clientSecret string) error {
@@ -313,23 +341,25 @@ func (r *restClient) SetSessionKey(s string) {
 func (r *restClient) Status() (*Status, error) {
 	tflog.Debug(r.ctx, "Getting status")
 
-	u, err := url.Parse(r.endpoint)
-	if err != nil {
-		return nil, err
-	}
+	return retry(r, func() (*Status, error) {
+		u, err := url.Parse(r.endpoint)
+		if err != nil {
+			return nil, err
+		}
 
-	u = u.JoinPath("status")
-	resp, err := r.client.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
+		u = u.JoinPath("status")
+		resp, err := r.client.Get(u.String())
+		if err != nil {
+			return nil, err
+		}
 
-	re, sErr := readResponse[RESTStatus](r.ctx, resp)
-	if len(sErr) > 0 {
-		return nil, fmt.Errorf(sErr)
-	}
+		re, sErr := readResponse[RESTStatus](r.ctx, resp)
+		if len(sErr) > 0 {
+			return nil, fmt.Errorf(sErr)
+		}
 
-	return &re.Template, nil
+		return &re.Template, nil
+	})
 }
 
 func (r *restClient) Sync() error {
@@ -460,7 +490,8 @@ func NewRestClient(ctx context.Context, endpoint string) Client {
 	rt := LoggingRoundTripper{ctx: ctx}
 
 	return &restClient{
-		ctx: ctx,
+		ctx:          ctx,
+		retryHandler: &retryHandler{},
 
 		client:   &http.Client{Transport: rt},
 		endpoint: endpoint,
