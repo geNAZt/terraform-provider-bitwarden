@@ -15,7 +15,7 @@ type retryHandler struct {
 }
 
 func (r *retryHandler) IsRetryable(err error, attempt int) bool {
-	return strings.Contains(err.Error(), rateLimitExceededError) && attempt < 3
+	return strings.Contains(err.Error(), rateLimitExceededError) && attempt < 10
 }
 
 func (r *retryHandler) Backoff(attempt int) time.Duration {
